@@ -1,5 +1,5 @@
 const { useParams } = require("react-router-dom")
-
+const connection = require('../data/myUsers')
 let users = [
     { id: 1, name: "Luca Bianchi", age: 25, nationality: "Italia" },
     { id: 2, name: "Sophie Martin", age: 31, nationality: "Francia" },
@@ -14,16 +14,31 @@ let users = [
 ]
 
 const usersIndex = (req, res) => {
-    res.json(users)
+    const indexQuery = `SELECT * FROM users`
+
+    connection.query(indexQuery, (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message })
+        }
+        res.json(result)
+    })
+
 }
 
 const usersDetail = (req, res) => {
     const id = Number(req.params.id);
-    const result = users.find((u) => u.id === id)
-    if (result === undefined) {
-        return res.status(404).json({ error: "User not found" })
-    }
-    res.json(result)
+
+    const showQuery = `SELECT * FROM users WHERE id = ?`
+
+    connection.query(showQuery, [id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message })
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'user not found' })
+        }
+        res.json(result[0])
+    })
 }
 
 const createNewUser = (req, res) => {
