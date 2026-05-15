@@ -42,29 +42,65 @@ const usersDetail = (req, res) => {
 }
 
 const createNewUser = (req, res) => {
+    const createUserQuery = `INSERT INTO users (name, age, nationality) VALUES (?, ?, ?)`
     const { name, age, nationality } = req.body
 
-    const newUser = {
-        id: users.length + 1,
-        name,
-        age,
-        nationality
-    }
-    users.push(newUser)
-    res.status(201).json(newUser)
+    const showNewUserQuery = `SELECT * FROM users WHERE id = ?`
+
+    connection.query(createUserQuery, [name, age, nationality], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message })
+        }
+        connection.query(showNewUserQuery, [result.insertId], (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: err.message })
+            }
+            res.status(201).json(result[0])
+        })
+
+    })
 }
 
 
 const deleteUser = (req, res) => {
-    const id = Number(req.params.id)
-    const VeriryId = users.some(u => u.id === id)
-    if (!VeriryId) {
-        return res.status(404).json({ message: "id not found..." })
-    }
-    users = users.filter(u => u.id != id)
-    res.status(200).json({ message: "User has ben deleted!" })
 
+    const { id } = req.params
+
+    const deleteQuery = `DELETE FROM users WHERE id = ?`
+
+    connection.query(deleteQuery, [id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message })
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "user not found" })
+        }
+        res.status(200).json({ message: `user with id: ${id} deleted` })
+    })
 
 }
 
-module.exports = { usersIndex, usersDetail, createNewUser, deleteUser }
+const putUser = (req, res) => {
+    const id = Number(req.params.id)
+    const { name, age, nationality } = req.body
+
+    const putQuery = `UPDATE users
+     SET name = ?, 
+     age = ?, 
+     nationality = ? 
+     WHERE id = ?`
+
+    connection.query(putQuery, [name, age, nationality, id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message })
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "user not found" })
+        }
+        res.status(200).json({ message: `user with id: ${id} updated` })
+
+    })
+}
+
+
+module.exports = { usersIndex, usersDetail, createNewUser, deleteUser, putUser }
